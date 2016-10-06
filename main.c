@@ -36,8 +36,6 @@ int main(int argc, char *argv[]){
     FILE *fp;
     int i = 0;
     char line[MAX_LAST_NAME_SIZE];
-#else
-    struct timespec mid;
 #endif
     struct timespec start, end;
     double cpu_time1, cpu_time2;
@@ -94,22 +92,14 @@ int main(int argc, char *argv[]){
         pthread_join(tid[i], NULL);
 
     entry *etmp;
-    pHead = pHead->pNext;
     for (int i = 0; i < THREAD_NUM; i++) {
         if (i == 0) {
-            pHead = app[i]->pHead->pNext;
-            dprintf("Connect %d head string %s %p\n", i,
-                    app[i]->pHead->pNext->lastName, app[i]->ptr);
+            pHead = app[i]->pHead;
         } else {
-            etmp->pNext = app[i]->pHead->pNext;
-            dprintf("Connect %d head string %s %p\n", i,
-                    app[i]->pHead->pNext->lastName, app[i]->ptr);
+            etmp->pNext = app[i]->pHead;
         }
 
         etmp = app[i]->pLast;
-        dprintf("Connect %d tail string %s %p\n", i,
-                app[i]->pLast->lastName, app[i]->ptr);
-        dprintf("round %d\n", i);
     }
 
     clock_gettime(CLOCK_REALTIME, &end);
@@ -149,6 +139,7 @@ int main(int argc, char *argv[]){
     findName(input, e);
     clock_gettime(CLOCK_REALTIME, &end);
     cpu_time2 = diff_in_second(start, end);
+
 
     FILE *output;
 #if defined(OPT)
