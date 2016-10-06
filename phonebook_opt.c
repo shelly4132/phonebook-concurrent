@@ -26,15 +26,13 @@ entry *findName(char lastname[], entry *pHead)
     return NULL;
 }
 
-append_a *new_append_a(char *ptr, char *eptr, int tid, int ntd,
-                       entry *start)
+append_a *new_append_a(char *ptr, char *eptr, int tid, entry *start)
 {
     append_a *app = (append_a *) malloc(sizeof(append_a));
 
     app->ptr = ptr;
     app->eptr = eptr;
     app->tid = tid;
-    app->nthread = ntd;
     app->entryStart = start;
 
     app->pHead = (app->pLast = app->entryStart);
@@ -52,9 +50,8 @@ void append(void *arg)
 
     int count = 0;
     entry *j = app->entryStart;
-    for (char *i = app->ptr; i < app->eptr;
-            i += MAX_LAST_NAME_SIZE * app->nthread,
-            j += app->nthread,count++) {
+    char *i = app->ptr;
+    while(i < app->eptr){
         app->pLast->pNext = j;
         app->pLast = app->pLast->pNext;
 
@@ -62,6 +59,9 @@ void append(void *arg)
         dprintf("thread %d append string = %s\n",
                 app->tid, app->pLast->lastName);
         app->pLast->pNext = NULL;
+
+        i += MAX_LAST_NAME_SIZE * THREAD_NUM;
+        j += THREAD_NUM,count++;
     }
     clock_gettime(CLOCK_REALTIME, &end);
     cpu_time = diff_in_second(start, end);

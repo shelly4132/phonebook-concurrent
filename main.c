@@ -9,6 +9,11 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
+#include "file.c"
+#include "debug.h"
+#include <fcntl.h>
+#define ALIGN_FILE "align.txt"
+
 #include IMPL
 
 #define DICT_FILE "./dictionary/words.txt"
@@ -26,8 +31,7 @@ static double diff_in_second(struct timespec t1, struct timespec t2)
     return (diff.tv_sec + diff.tv_nsec / 1000000000.0);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
 #ifndef OPT
     FILE *fp;
     int i = 0;
@@ -47,10 +51,6 @@ int main(int argc, char *argv[])
     }
 #else
 
-#include "file.c"
-#include "debug.h"
-#include <fcntl.h>
-#define ALIGN_FILE "align.txt"
     file_align(DICT_FILE, ALIGN_FILE, MAX_LAST_NAME_SIZE);
     int fd = open(ALIGN_FILE, O_RDONLY | O_NONBLOCK);
     off_t fs = fsize(ALIGN_FILE);
@@ -68,10 +68,6 @@ int main(int argc, char *argv[])
 #endif
 
 #if defined(OPT)
-
-#ifndef THREAD_NUM
-#define THREAD_NUM 4
-#endif
     clock_gettime(CLOCK_REALTIME, &start);
 
     char *map = mmap(NULL, fs, PROT_READ, MAP_SHARED, fd, 0);
@@ -89,9 +85,8 @@ int main(int argc, char *argv[])
     append_a **app = (append_a **) malloc(sizeof(append_a *) * THREAD_NUM);
     for (int i = 0; i < THREAD_NUM; i++)
         app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i,
-                              THREAD_NUM, entry_pool + i);
+                              entry_pool + i);
 
-    clock_gettime(CLOCK_REALTIME, &mid);
     for (int i = 0; i < THREAD_NUM; i++)
         pthread_create( &tid[i], NULL, (void *) &append, (void *) app[i]);
 
@@ -137,8 +132,6 @@ int main(int argc, char *argv[])
     /* close file as soon as possible */
     fclose(fp);
 #endif
-
-    e = pHead;
 
     /* the givn last name to find */
     char input[MAX_LAST_NAME_SIZE] = "zyxel";
