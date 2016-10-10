@@ -14,6 +14,9 @@
 #include <fcntl.h>
 #define ALIGN_FILE "align.txt"
 
+#include "threadpool.h"
+#define POOL_SIZE 8
+
 #include IMPL
 
 #define DICT_FILE "./dictionary/words.txt"
@@ -79,17 +82,15 @@ int main(int argc, char *argv[]){
 
     pthread_setconcurrency(THREAD_NUM + 1);
 
-    pthread_t *tid = (pthread_t *) malloc(sizeof(pthread_t) * THREAD_NUM);
     append_a **app = (append_a **) malloc(sizeof(append_a *) * THREAD_NUM);
-    for (int i = 0; i < THREAD_NUM; i++)
-        app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i,
-                              entry_pool + i);
 
-    for (int i = 0; i < THREAD_NUM; i++)
-        pthread_create( &tid[i], NULL, (void *) &append, (void *) app[i]);
-
-    for (int i = 0; i < THREAD_NUM; i++)
-        pthread_join(tid[i], NULL);
+    threadpool_t *pool = threadpool_create(THREAD_NUM, POOL_SIZE ,0);
+    for (int i = 0; i < THREAD_NUM; i++) {
+        app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i, entry_pool + i);
+        threadpool_add(pool, &append, (void *)app[i], 0);
+    }
+    /* Graceful shutdown */
+    threadpool_destroy(pool, 1);
 
     entry *etmp;
     for (int i = 0; i < THREAD_NUM; i++) {
@@ -117,6 +118,7 @@ int main(int argc, char *argv[]){
     clock_gettime(CLOCK_REALTIME, &end);
     cpu_time1 = diff_in_second(start, end);
 #endif
+
 
 #ifndef OPT
     /* close file as soon as possible */
@@ -158,7 +160,6 @@ int main(int argc, char *argv[]){
     free(pHead);
 #else
     free(entry_pool);
-    free(tid);
     free(app);
     munmap(map, fs);
 #endif
